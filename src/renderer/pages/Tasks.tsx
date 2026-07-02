@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { List, Tag, Typography, Progress, Space, Button, Empty } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, LoadingOutlined, FolderOpenOutlined } from '@ant-design/icons';
-import type { Task } from '../../../shared/types';
+import type { Task } from '@shared/types';
 
 const { Text } = Typography;
 

@@ -5,8 +5,8 @@
  */
 
 import { randomUUID } from 'crypto';
-import type { Task, TaskStatus, ProgressInfo, Plugin, FileInfo } from '../../shared/types';
-import { DEFAULT_MAX_CONCURRENT } from '../../shared/constants';
+import type { Task, TaskStatus, ProgressInfo, Plugin, FileInfo } from '@shared/types';
+import { DEFAULT_MAX_CONCURRENT } from '@shared/constants';
 
 interface TaskItem {
   id: string;

@@ -4,8 +4,8 @@
 
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { USER_DATA_DIR } from '../../shared/constants';
-import { DEFAULT_SETTINGS } from '../../shared/constants';
+import { USER_DATA_DIR } from '@shared/constants';
+import { DEFAULT_SETTINGS } from '@shared/constants';
 
 export const SETTINGS_FILE = join(USER_DATA_DIR, 'settings.json');
 

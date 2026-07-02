@@ -3,7 +3,7 @@
  */
 
 import { promises as fs } from 'fs';
-import { USER_DATA_DIR, LOG_DIR, TEMP_DIR } from '../../shared/constants';
+import { USER_DATA_DIR, LOG_DIR, TEMP_DIR } from '@shared/constants';
 
 export async function ensureDirs(): Promise<void> {
   await fs.mkdir(USER_DATA_DIR, { recursive: true });

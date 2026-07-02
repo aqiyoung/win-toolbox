@@ -7,7 +7,7 @@
 
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
-import type { Plugin, PluginManifest, FileInfo, ProgressInfo, ConvertResult } from '../../shared/types';
+import type { Plugin, PluginManifest, FileInfo, ProgressInfo, ConvertResult } from '@shared/types';
 import { runPython } from './python-bridge';
 
 /**

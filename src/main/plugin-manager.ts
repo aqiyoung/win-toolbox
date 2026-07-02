@@ -4,8 +4,8 @@
 
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { PLUGINS_DIR } from '../../shared/constants';
-import type { Plugin, PluginManifest } from '../../shared/types';
+import { PLUGINS_DIR } from '@shared/constants';
+import type { Plugin, PluginManifest } from '@shared/types';
 import { loadPlugin } from './utils/load-plugin';
 
 export class PluginManager {

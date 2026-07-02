@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Row, Col, Typography, Spin } from 'antd';
 import { FileTextOutlined, VideoCameraOutlined, FileImageOutlined } from '@ant-design/icons';
-import type { PluginManifest } from '../../../shared/types';
+import type { PluginManifest } from '@shared/types';
 
 const { Title, Text } = Typography;
 

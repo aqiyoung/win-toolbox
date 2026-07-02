@@ -18,7 +18,7 @@ import {
   Switch,
 } from 'antd';
 import { ArrowLeftOutlined, FolderOpenOutlined, PlayCircleOutlined } from '@ant-design/icons';
-import type { ProgressInfo, PluginManifest, FileInfo } from '../../../shared/types';
+import type { ProgressInfo, PluginManifest, FileInfo } from '@shared/types';
 
 const { Text, Title } = Typography;
 

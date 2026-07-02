@@ -11,8 +11,8 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
-import { PYTHON_PATH } from '../../shared/constants';
-import type { FileInfo, ProgressInfo, ConvertResult } from '../../shared/types';
+import { PYTHON_PATH } from '@shared/constants';
+import type { FileInfo, ProgressInfo, ConvertResult } from '@shared/types';
 
 interface ProgressMsg {
   type: 'progress';
