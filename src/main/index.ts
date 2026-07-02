@@ -4,7 +4,8 @@
 
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import { join } from 'path';
-import { IS_DEV, APP_NAME, IPC, DEFAULT_SETTINGS } from '@shared/constants';
+import { IS_DEV, APP_NAME, DEFAULT_SETTINGS } from '@shared/constants';
+import { IPC } from '@shared/types';
 import { PluginManager } from './plugin-manager';
 import { TaskQueue } from './task-queue';
 import { selectFiles, selectFilesMultiple, selectDirectory } from './utils/file';
