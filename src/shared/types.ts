@@ -90,7 +90,7 @@ export interface Task {
 
 // ─── IPC 通道事件名 ────────────────────────
 
-export const IPC = {
+export const IPC: Record<string, string> = {
   // 插件
   PLUGINS_LIST: 'plugins:list',
   PLUGINS_GET: 'plugins:get',
@@ -116,4 +116,4 @@ export const IPC = {
 
   // 系统
   APP_VERSION: 'app:version',
-} as const;
+};
