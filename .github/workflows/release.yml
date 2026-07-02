@@ -40,9 +40,12 @@ jobs:
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
             dist/*.exe
             dist/*.yml
+            dist/latest.yml
           fail_on_unmatched_files: false
           generate_release_notes: true
