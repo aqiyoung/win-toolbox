@@ -1,5 +1,8 @@
 appId: com.wintoolbox.app
 productName: Win Toolbox
+
+publish: never
+
 directories:
   output: dist
   buildResources: build
