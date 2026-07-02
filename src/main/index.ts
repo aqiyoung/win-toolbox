@@ -7,8 +7,9 @@ import { join } from 'path';
 import { IS_DEV, APP_NAME, IPC, DEFAULT_SETTINGS } from '@shared/constants';
 import { PluginManager } from './plugin-manager';
 import { TaskQueue } from './task-queue';
-import { selectFiles, selectFilesMultiple, selectDirectory, ensureDirs } from './utils/file';
+import { selectFiles, selectFilesMultiple, selectDirectory } from './utils/file';
 import { getSettings, setSettings, SETTINGS_FILE } from './utils/settings';
+import { ensureDirs } from './utils/ensure-dirs';
 
 // 单实例锁定
 const gotLock = app.requestSingleInstanceLock();
