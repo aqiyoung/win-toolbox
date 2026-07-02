@@ -1,0 +1,36 @@
+appId: com.wintoolbox.app
+productName: Win Toolbox
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - "out/**/*"
+  - "package.json"
+
+extraResources:
+  - from: "python-runtime"
+    to: "python-runtime"
+    filter: ["**/*"]
+  - from: "resources/ffmpeg"
+    to: "resources/ffmpeg"
+    filter: ["**/*"]
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Win Toolbox
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+
+asar: true
+compression: maximum

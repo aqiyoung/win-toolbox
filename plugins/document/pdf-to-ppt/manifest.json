@@ -1,0 +1,42 @@
+{
+  "id": "doc-pdf-to-ppt",
+  "name": "PDF 转 PPT",
+  "description": "将 PDF 文件转换为可编辑的 PowerPoint，最大程度保留原有内容和排版",
+  "version": "0.1.0",
+  "category": "document",
+  "inputFormats": ["pdf"],
+  "outputFormats": ["pptx"],
+  "author": "Win Toolbox",
+  "icon": "📄",
+  "requiresPython": true,
+  "configSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "strategy": {
+        "type": "string",
+        "enum": ["structured", "hybrid", "screenshot"],
+        "default": "hybrid",
+        "description": "转换策略: structured=纯可编辑 | hybrid=混合(推荐) | screenshot=截图保真"
+      },
+      "slideRatio": {
+        "type": "string",
+        "enum": ["4:3", "16:9", "match_pdf"],
+        "default": "match_pdf",
+        "description": "PPT 页面比例"
+      },
+      "dpi": {
+        "type": "number",
+        "default": 200,
+        "minimum": 72,
+        "maximum": 600,
+        "description": "渲染 DPI(用于混合/截图模式)"
+      },
+      "fontFallback": {
+        "type": "string",
+        "default": "微软雅黑",
+        "description": "原字体不可用时的替代字体"
+      }
+    }
+  }
+}

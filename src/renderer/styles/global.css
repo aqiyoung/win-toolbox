@@ -1,0 +1,99 @@
+/* 全局样式 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei',
+    '微软雅黑', sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 自定义标题栏拖拽区域 */
+.titlebar {
+  -webkit-app-region: drag;
+}
+
+.titlebar button,
+.titlebar .no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+/* 工具卡片 */
+.plugin-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  cursor: pointer;
+  border: 1px solid #e8e8e8;
+  transition: all 0.2s;
+  text-align: center;
+}
+.plugin-card:hover {
+  border-color: #1677ff;
+  box-shadow: 0 4px 16px rgba(22, 119, 255, 0.12);
+  transform: translateY(-2px);
+}
+.plugin-card:active {
+  transform: translateY(0);
+}
+.plugin-card .plugin-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+.plugin-card .plugin-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+/* 拖拽上传区域 */
+.drop-zone {
+  border: 2px dashed #d9d9d9;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  background: #fafafa;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.drop-zone:hover {
+  border-color: #1677ff;
+  background: #f0f7ff;
+}
+.drop-zone.dragging {
+  border-color: #1677ff;
+  background: #e6f4ff;
+}

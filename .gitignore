@@ -1,0 +1,15 @@
+node_modules/
+out/
+dist/
+*.log
+.vscode/
+.idea/
+*.local
+
+# 内嵌运行时
+python-runtime/
+resources/ffmpeg/
+
+# 系统
+.DS_Store
+Thumbs.db
