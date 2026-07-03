@@ -46,19 +46,21 @@ function SchemaField({
   disabled?: boolean;
 }) {
   const label = schema.description || name;
+  // ★ 关键修复: antd 组件不接受 undefined value,必须转为具体默认值
+  const safeValue = value ?? schema.default;
 
   // enum → Select
   if (schema.enum) {
+    const selectValue = safeValue ?? schema.enum[0]; // fallback 到第一个选项
     return (
       <Space direction="vertical" style={{ width: '100%' }}>
         <Text strong>{label}</Text>
         <Select
-          value={value ?? schema.default}
+          value={selectValue}
           onChange={onChange}
           disabled={disabled}
           style={{ width: '100%' }}
           options={schema.enum.map((v: string) => {
-            // 给 enum 值加中文标签
             const labels: Record<string, string> = {
               hybrid: '🔀 混合 (推荐)',
               structured: '📝 纯结构化',
@@ -74,10 +76,6 @@ function SchemaField({
               text: '提取文本',
               tables: '提取表格',
               all: '全部提取',
-              best: '最佳质量',
-              good: '高质量',
-              medium: '中等',
-              low: '低质量 (体积小)',
             };
             return { value: v, label: labels[v] ?? v };
           })}
@@ -92,7 +90,7 @@ function SchemaField({
       <Space direction="vertical" style={{ width: '100%' }}>
         <Text strong>{label}</Text>
         <Switch
-          checked={value ?? schema.default ?? false}
+          checked={Boolean(safeValue)}
           onChange={onChange}
           disabled={disabled}
           checkedChildren="开"
@@ -107,12 +105,13 @@ function SchemaField({
     const min = schema.minimum ?? 0;
     const max = schema.maximum ?? 9999;
     const useSlider = max - min <= 1000 && min >= 0;
+    const numValue = typeof safeValue === 'number' ? safeValue : (schema.default ?? min);
     return (
       <Space direction="vertical" style={{ width: '100%' }}>
         <Text strong>{label}</Text>
         {useSlider ? (
           <Slider
-            value={value ?? schema.default ?? min}
+            value={numValue}
             onChange={onChange}
             min={min}
             max={max}
@@ -123,7 +122,7 @@ function SchemaField({
           />
         ) : (
           <InputNumber
-            value={value ?? schema.default}
+            value={numValue}
             onChange={(v) => onChange(v)}
             min={min}
             max={max}
@@ -143,7 +142,7 @@ function SchemaField({
       <Space direction="vertical" style={{ width: '100%' }}>
         <Text strong>{label}</Text>
         <Input
-          value={value ?? schema.default ?? ''}
+          value={safeValue ?? ''}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           placeholder={schema.default ? `默认: ${schema.default}` : ''}
@@ -176,21 +175,28 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
 
   // 加载插件信息
   useEffect(() => {
-    window.toolbox.getPlugin(pluginId).then((p: PluginManifest | undefined) => {
-      if (!p) {
-        setNotFound(true);
-        return;
-      }
-      setPlugin(p);
-      // 根据 schema 初始化选项
-      if (p.configSchema?.properties) {
-        const initial: Record<string, any> = {};
-        for (const [k, s] of Object.entries<any>(p.configSchema.properties)) {
-          initial[k] = s.default;
+    window.toolbox
+      .getPlugin(pluginId)
+      .then((p: PluginManifest | undefined) => {
+        console.log('[Convert] getPlugin result:', p);
+        if (!p) {
+          setNotFound(true);
+          return;
         }
-        setOptions(initial);
-      }
-    });
+        setPlugin(p);
+        // 根据 schema 初始化选项
+        if (p.configSchema?.properties) {
+          const initial: Record<string, any> = {};
+          for (const [k, s] of Object.entries<any>(p.configSchema.properties)) {
+            initial[k] = s.default;
+          }
+          setOptions(initial);
+        }
+      })
+      .catch((err) => {
+        console.error('[Convert] getPlugin failed:', err);
+        setNotFound(true);
+      });
     window.toolbox.getSettings().then((s: Record<string, unknown>) => {
       setOutputDir((s.outputDir as string) || '');
     });

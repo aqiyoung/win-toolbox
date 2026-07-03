@@ -11,6 +11,7 @@ import {
   ToolOutlined,
 } from '@ant-design/icons';
 import TitleBar from './components/TitleBar';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import HomePage from './pages/Home';
 import ConvertPage from './pages/Convert';
 import TasksPage from './pages/Tasks';
@@ -193,12 +194,14 @@ export default function App() {
             minHeight: 'calc(100vh - 36px)',
           }}
         >
-          {page === 'home' && <HomePage onPluginClick={handlePluginClick} />}
-          {page === 'convert' && activePluginId && (
-            <ConvertPage pluginId={activePluginId} onBack={handleBack} />
-          )}
-          {page === 'tasks' && <TasksPage />}
-          {page === 'settings' && <SettingsPage />}
+          <ErrorBoundary>
+            {page === 'home' && <HomePage onPluginClick={handlePluginClick} />}
+            {page === 'convert' && activePluginId && (
+              <ConvertPage pluginId={activePluginId} onBack={handleBack} />
+            )}
+            {page === 'tasks' && <TasksPage />}
+            {page === 'settings' && <SettingsPage />}
+          </ErrorBoundary>
         </Content>
       </Layout>
     </Layout>
