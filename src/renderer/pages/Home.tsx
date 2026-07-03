@@ -94,7 +94,7 @@ export default function HomePage({ onPluginClick }: HomePageProps) {
 
       {/* 分类筛选 */}
       <div style={{ marginBottom: 24 }}>
-        <Space>
+        <HomeSpace>
           <div
             className={`category-chip ${activeCategory === 'all' ? 'active' : ''}`}
             onClick={() => setActiveCategory('all')}
@@ -116,7 +116,7 @@ export default function HomePage({ onPluginClick }: HomePageProps) {
               </div>
             );
           })}
-        </div>
+        </HomeSpace>
       </div>
 
       {/* 插件网格 */}
@@ -165,6 +165,6 @@ export default function HomePage({ onPluginClick }: HomePageProps) {
 }
 
 // 避免引入 antd Space —— 简单 inlined
-function Space({ children }: { children: React.ReactNode }) {
+function HomeSpace({ children }: { children: React.ReactNode }) {
   return <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{children}</div>;
 }
