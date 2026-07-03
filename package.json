@@ -1,6 +1,6 @@
 {
   "name": "win-toolbox",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "description": "Windows toolbox for document conversion, video processing and image editing",
   "main": "out/main/index.js",
   "author": "Win Toolbox",

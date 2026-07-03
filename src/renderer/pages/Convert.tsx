@@ -163,6 +163,7 @@ function humanFileSize(bytes: number): string {
 
 export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
   const [plugin, setPlugin] = useState<PluginManifest | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [options, setOptions] = useState<Record<string, any>>({});
   const [outputDir, setOutputDir] = useState('');
@@ -176,7 +177,10 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
   // 加载插件信息
   useEffect(() => {
     window.toolbox.getPlugin(pluginId).then((p: PluginManifest | undefined) => {
-      if (!p) return;
+      if (!p) {
+        setNotFound(true);
+        return;
+      }
       setPlugin(p);
       // 根据 schema 初始化选项
       if (p.configSchema?.properties) {
@@ -286,7 +290,30 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
     }
   };
 
-  if (!plugin) return null;
+  // 找不到插件 → 友好错误页
+  if (notFound) {
+    return (
+      <div style={{ padding: 60, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+        <Title level={4}>功能模块未找到</Title>
+        <Paragraph type="secondary">
+          插件 ID "{pluginId}" 不存在或加载失败。
+          <br />
+          请尝试重启应用或联系开发者。
+        </Paragraph>
+        <Button type="primary" onClick={onBack}>返回首页</Button>
+      </div>
+    );
+  }
+
+  // 加载 manifest 中
+  if (!plugin) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   const schema = plugin.configSchema;
   const properties = schema?.properties || {};

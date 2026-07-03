@@ -28,25 +28,22 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
   const raw = await fs.readFile(manifestPath, 'utf-8');
   const manifest: PluginManifest = JSON.parse(raw);
   const baseDir = dirname(manifestPath);
-
-  // 尝试加载 Node 插件入口 (index.js)
-  // 开发模式用 require,生产模式加载编译后的 index.js
   const indexPath = join(baseDir, 'index.js');
-  let nodePlugin: {
-    validate?: (inputs: FileInfo[]) => Promise<{ valid: boolean; errors: string[] }>;
-    convert?: (
-      inputs: FileInfo[],
-      options: Record<string, unknown>,
-      onProgress: (p: ProgressInfo) => void,
-    ) => Promise<ConvertResult>;
-  } | null = null;
 
-  try {
-    nodePlugin = require(indexPath);
-  } catch {
-    // 没有 index.js 或加载失败 — 仍返回 manifest 基本信息
-    // Python-only 插件可以没有可用的 nodePlugin,但仍需出现在列表中
-    console.warn(`[loadPlugin] ${manifest.id}: index.js 不可用 (${indexPath}), Python-only 模式`);
+  // ★ 惰性加载：discover 阶段不 require index.js —— 只检查文件是否存在于 manifest。
+  // require 延迟到实际 convert 时执行，这样带 native 模块 (sharp/fluent-ffmpeg) 的插件
+   // 不会在 require() 时就崩溃整个 discover 过程。
+  let cachedNodePlugin: any = null;
+
+  function getNodePlugin() {
+    if (cachedNodePlugin !== null) return cachedNodePlugin;
+    try {
+      cachedNodePlugin = require(indexPath);
+    } catch (err) {
+      cachedNodePlugin = false; // 标记失败,避免重复 require
+      console.warn(`[loadPlugin] ${manifest.id}: require 失败 (${indexPath}):`, err);
+    }
+    return cachedNodePlugin || null;
   }
 
   return {
@@ -54,10 +51,9 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
     requiresPython: manifest.requiresPython ?? false,
 
     async validate(inputs: FileInfo[]) {
-      // 优先用插件自带的 validate
+      const nodePlugin = getNodePlugin();
       if (nodePlugin?.validate) return nodePlugin.validate(inputs);
 
-      // 默认：按扩展名校验
       const errors: string[] = [];
       for (const f of inputs) {
         const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
@@ -77,7 +73,7 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
         return runPython(baseDir, manifest.id, inputs, options, onProgress);
       }
 
-      // Node 侧插件
+      const nodePlugin = getNodePlugin();
       if (nodePlugin?.convert) {
         return nodePlugin.convert(inputs, options, onProgress);
       }
