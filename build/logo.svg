@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- 背景渐变（深蓝到紫，工具感） -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a237e"/>
+      <stop offset="50%" stop-color="#283593"/>
+      <stop offset="100%" stop-color="#3949ab"/>
+    </linearGradient>
+    <!-- 扳手渐变 -->
+    <linearGradient id="wrenchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd54f"/>
+      <stop offset="100%" stop-color="#ffb300"/>
+    </linearGradient>
+    <!-- 螺丝刀渐变 -->
+    <linearGradient id="screwdriverGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff7043"/>
+      <stop offset="100%" stop-color="#f4511e"/>
+    </linearGradient>
+    <!-- 高光 -->
+    <radialGradient id="shine" cx="35%" cy="30%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 圆角背景 -->
+  <rect x="0" y="0" width="256" height="256" rx="48" ry="48" fill="url(#bgGrad)"/>
+
+  <!-- 装饰圆环 -->
+  <circle cx="128" cy="128" r="100" fill="none" stroke="#5c6bc0" stroke-width="2" opacity="0.3"/>
+  <circle cx="128" cy="128" r="88" fill="none" stroke="#7986cb" stroke-width="1" opacity="0.2"/>
+
+  <!-- 扳手 -->
+  <g transform="translate(128,128) rotate(-30)">
+    <!-- 扳手手柄 -->
+    <rect x="-18" y="-55" width="36" height="60" rx="10" fill="url(#wrenchGrad)"/>
+    <!-- 扳手头部（开口） -->
+    <path d="M -40 5 Q -45 -5 -30 -10 L -22 -12 Q -12 -8 -12 2 L -12 20 L 12 20 L 12 2 Q 12 -8 22 -12 L 30 -10 Q 45 -5 40 5 Q 35 12 25 10 L 12 8 L -12 8 L -25 10 Q -35 12 -40 5 Z" fill="url(#wrenchGrad)"/>
+    <!-- 扳手头部开口圆 -->
+    <circle cx="0" cy="0" r="10" fill="#1a237e"/>
+  </g>
+
+  <!-- 右上螺丝刀装饰 -->
+  <g transform="translate(195, 60) rotate(45)">
+    <rect x="-4" y="-25" width="8" height="25" rx="2" fill="url(#screwdriverGrad)"/>
+    <rect x="-2" y="-32" width="4" height="8" rx="1" fill="#bdbdbd"/>
+  </g>
+
+  <!-- 左下齿轮装饰 -->
+  <g transform="translate(60, 195)" opacity="0.6">
+    <circle cx="0" cy="0" r="16" fill="none" stroke="#90a4ae" stroke-width="4"/>
+    <circle cx="0" cy="0" r="6" fill="#90a4ae"/>
+    <line x1="-22" y1="0" x2="-12" y2="0" stroke="#90a4ae" stroke-width="4" stroke-linecap="round"/>
+    <line x1="12" y1="0" x2="22" y2="0" stroke="#90a4ae" stroke-width="4" stroke-linecap="round"/>
+    <line x1="0" y1="-22" x2="0" y2="-12" stroke="#90a4ae" stroke-width="4" stroke-linecap="round"/>
+    <line x1="0" y1="12" x2="0" y2="22" stroke="#90a4ae" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- 高光层 -->
+  <rect x="0" y="0" width="256" height="256" rx="48" ry="48" fill="url(#shine)"/>
+</svg>

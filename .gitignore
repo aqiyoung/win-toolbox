@@ -13,3 +13,7 @@ resources/ffmpeg/
 # 系统
 .DS_Store
 Thumbs.db
+
+# 子项目 / 工具
+.nvm/
+.dev-environment/

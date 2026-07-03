@@ -1,0 +1,27 @@
+{
+  "id": "doc-pdf-extract",
+  "name": "PDF 提取",
+  "description": "从 PDF 中提取纯文本 / 表格数据 / 图片",
+  "version": "0.1.0",
+  "category": "document",
+  "inputFormats": ["pdf"],
+  "outputFormats": ["txt", "csv", "json"],
+  "author": "Win Toolbox",
+  "icon": "📋",
+  "requiresPython": true,
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "extractMode": {
+        "type": "string",
+        "enum": ["text", "tables", "all"],
+        "default": "text"
+      },
+      "format": {
+        "type": "string",
+        "enum": ["txt", "csv", "json"],
+        "default": "txt"
+      }
+    }
+  }
+}

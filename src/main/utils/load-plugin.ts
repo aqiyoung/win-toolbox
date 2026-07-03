@@ -1,7 +1,7 @@
 /**
  * 根据 manifest.json 路径加载插件
  *
- * manifest.json 同目录下需有 index.ts (Node 侧编排),
+ * manifest.json 同目录下需有 index.js (Node 侧编排),
  * Python 脚本放在 python/ 子目录。
  */
 
@@ -29,15 +29,22 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
   const manifest: PluginManifest = JSON.parse(raw);
   const baseDir = dirname(manifestPath);
 
-  // 尝试编译加载 index.ts (开发模式用 require 或动态 import)
-  // 生产模式加载 index.js
+  // 尝试加载 Node 插件入口 (index.js)
+  // 开发模式用 require,生产模式加载编译后的 index.js
   const indexPath = join(baseDir, 'index.js');
-  let pluginModule: { createManifest?: () => PluginManifest } = {};
+  let nodePlugin: {
+    validate?: (inputs: FileInfo[]) => Promise<{ valid: boolean; errors: string[] }>;
+    convert?: (
+      inputs: FileInfo[],
+      options: Record<string, unknown>,
+      onProgress: (p: ProgressInfo) => void,
+    ) => Promise<ConvertResult>;
+  } | null = null;
 
   try {
-    pluginModule = await import(indexPath);
+    nodePlugin = require(indexPath);
   } catch {
-    // 没有 index.js 就用 manifest 里的信息兜底
+    // 没有 index.js 则不是 Node 插件
   }
 
   return {
@@ -45,15 +52,17 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
     requiresPython: manifest.requiresPython ?? false,
 
     async validate(inputs: FileInfo[]) {
-      const errors: string[] = [];
+      // 优先用插件自带的 validate
+      if (nodePlugin?.validate) return nodePlugin.validate(inputs);
 
+      // 默认：按扩展名校验
+      const errors: string[] = [];
       for (const f of inputs) {
         const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
         if (!manifest.inputFormats.includes(ext)) {
           errors.push(`不支持的输入格式: ${f.name}`);
         }
       }
-
       return { valid: errors.length === 0, errors };
     },
 
@@ -66,9 +75,12 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
         return runPython(baseDir, manifest.id, inputs, options, onProgress);
       }
 
-      // Node 侧插件走直接调用
-      // TODO: 视频/图片等非 Python 插件
-      throw new Error(`未注册的 ${manifest.id} Node 侧处理`);
+      // Node 侧插件
+      if (nodePlugin?.convert) {
+        return nodePlugin.convert(inputs, options, onProgress);
+      }
+
+      throw new Error(`插件 ${manifest.id} 没有可用的转换实现`);
     },
   };
 }

@@ -1,0 +1,19 @@
+{
+  "id": "doc-pdf-to-word",
+  "name": "PDF → Word",
+  "description": "将 PDF 转换为可编辑的 Word 文档，保留表格和排版",
+  "version": "0.1.0",
+  "category": "document",
+  "inputFormats": ["pdf"],
+  "outputFormats": ["docx"],
+  "author": "Win Toolbox",
+  "icon": "📝",
+  "requiresPython": true,
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "keepImages": { "type": "boolean", "default": true },
+      "oem": { "type": "number", "default": 3, "minimum": 0, "maximum": 4, "description": "pdf2docx 解析引擎 (3=默认, 最快)" }
+    }
+  }
+}

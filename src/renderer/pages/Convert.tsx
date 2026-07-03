@@ -1,8 +1,8 @@
 /**
- * 转换页面 — 配置 + 执行 + 进度
+ * 通用转换页面 — 根据 manifest.configSchema 动态渲染配置
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Card,
   Button,
@@ -16,52 +16,181 @@ import {
   Row,
   Col,
   Switch,
+  Input,
+  Slider,
 } from 'antd';
-import { ArrowLeftOutlined, FolderOpenOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, FolderOpenOutlined, PlayCircleOutlined, FileOutlined } from '@ant-design/icons';
 import type { ProgressInfo, PluginManifest, FileInfo } from '@shared/types';
 
-const { Text, Title } = Typography;
+const { Text, Title, Paragraph } = Typography;
 
 interface ConvertPageProps {
   pluginId: string;
   onBack: () => void;
 }
 
-interface ConvertOptions {
-  strategy: 'structured' | 'hybrid' | 'screenshot';
-  slideRatio: '4:3' | '16:9' | 'match_pdf';
-  dpi: number;
-  fontFallback: string;
-  outputDir: string;
-  autoOpen: boolean;
+/**
+ * 根据 JSON Schema 属性描述渲染对应的表单控件
+ */
+function SchemaField({
+  name,
+  schema,
+  value,
+  onChange,
+  disabled,
+}: {
+  name: string;
+  schema: any;
+  value: any;
+  onChange: (v: any) => void;
+  disabled?: boolean;
+}) {
+  const label = schema.description || name;
+
+  // enum → Select
+  if (schema.enum) {
+    return (
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Text strong>{label}</Text>
+        <Select
+          value={value ?? schema.default}
+          onChange={onChange}
+          disabled={disabled}
+          style={{ width: '100%' }}
+          options={schema.enum.map((v: string) => {
+            // 给 enum 值加中文标签
+            const labels: Record<string, string> = {
+              hybrid: '🔀 混合 (推荐)',
+              structured: '📝 纯结构化',
+              screenshot: '📸 截图保真',
+              match_pdf: '与源文件一致',
+              '16:9': '16:9',
+              '4:3': '4:3',
+              percent: '按百分比',
+              width: '指定宽度',
+              height: '指定高度',
+              fit: '适应 (保持比例)',
+              same: '保持原格式',
+              text: '提取文本',
+              tables: '提取表格',
+              all: '全部提取',
+              best: '最佳质量',
+              good: '高质量',
+              medium: '中等',
+              low: '低质量 (体积小)',
+            };
+            return { value: v, label: labels[v] ?? v };
+          })}
+        />
+      </Space>
+    );
+  }
+
+  // boolean → Switch
+  if (schema.type === 'boolean') {
+    return (
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Text strong>{label}</Text>
+        <Switch
+          checked={value ?? schema.default ?? false}
+          onChange={onChange}
+          disabled={disabled}
+          checkedChildren="开"
+          unCheckedChildren="关"
+        />
+      </Space>
+    );
+  }
+
+  // number → InputNumber or Slider
+  if (schema.type === 'number') {
+    const min = schema.minimum ?? 0;
+    const max = schema.maximum ?? 9999;
+    const useSlider = max - min <= 1000 && min >= 0;
+    return (
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Text strong>{label}</Text>
+        {useSlider ? (
+          <Slider
+            value={value ?? schema.default ?? min}
+            onChange={onChange}
+            min={min}
+            max={max}
+            disabled={disabled}
+            marks={Object.fromEntries(
+              [min, Math.round((min + max) / 2), max].map((v) => [v, String(v)]),
+            )}
+          />
+        ) : (
+          <InputNumber
+            value={value ?? schema.default}
+            onChange={(v) => onChange(v)}
+            min={min}
+            max={max}
+            step={schema.step || 1}
+            disabled={disabled}
+            style={{ width: '100%' }}
+            addonAfter={schema.unit || ''}
+          />
+        )}
+      </Space>
+    );
+  }
+
+  // string → Input
+  if (schema.type === 'string') {
+    return (
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Text strong>{label}</Text>
+        <Input
+          value={value ?? schema.default ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          placeholder={schema.default ? `默认: ${schema.default}` : ''}
+        />
+      </Space>
+    );
+  }
+
+  return null;
+}
+
+function humanFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
 export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
   const [plugin, setPlugin] = useState<PluginManifest | null>(null);
   const [files, setFiles] = useState<FileInfo[]>([]);
-  const [options, setOptions] = useState<ConvertOptions>({
-    strategy: 'hybrid',
-    slideRatio: 'match_pdf',
-    dpi: 200,
-    fontFallback: '微软雅黑',
-    outputDir: '',
-    autoOpen: true,
-  });
+  const [options, setOptions] = useState<Record<string, any>>({});
+  const [outputDir, setOutputDir] = useState('');
+  const [autoOpen, setAutoOpen] = useState(true);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const unsubs = useRef<(() => void)[]>([]);
 
   // 加载插件信息
   useEffect(() => {
     window.toolbox.getPlugin(pluginId).then((p: PluginManifest | undefined) => {
-      if (p) setPlugin(p);
+      if (!p) return;
+      setPlugin(p);
+      // 根据 schema 初始化选项
+      if (p.configSchema?.properties) {
+        const initial: Record<string, any> = {};
+        for (const [k, s] of Object.entries<any>(p.configSchema.properties)) {
+          initial[k] = s.default;
+        }
+        setOptions(initial);
+      }
     });
     window.toolbox.getSettings().then((s: Record<string, unknown>) => {
-      setOptions((prev) => ({ ...prev, outputDir: (s.outputDir as string) ?? '' }));
+      setOutputDir((s.outputDir as string) || '');
     });
 
-    // 订阅任务事件
     const off1 = window.toolbox.onTaskProgress(({ taskId: id, progress: p }) => {
       if (id === taskId) setProgress(p);
     });
@@ -70,7 +199,7 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
         setRunning(false);
         setProgress({ percent: 100, stage: '完成' });
         message.success(`转换完成! 输出 ${files.length} 个文件`);
-        if (options.autoOpen && files.length > 0) {
+        if (autoOpen && files.length > 0) {
           window.toolbox.openDir(files[0]);
         }
       }
@@ -78,7 +207,8 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
     const off3 = window.toolbox.onTaskFailed(({ taskId: id, error }) => {
       if (id === taskId) {
         setRunning(false);
-        message.error(`转换失败: ${error}`);
+        setError(error);
+        message.error(`转换失败`);
       }
     });
 
@@ -87,64 +217,79 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pluginId]);
 
-  // 选择文件
+  const updateOption = useCallback((key: string, value: any) => {
+    setOptions((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
   const handleSelectFiles = async () => {
     const paths = await window.toolbox.selectFilesMultiple();
     if (paths && paths.length > 0) {
-      const infos: FileInfo[] = await Promise.all(
-        paths.map(async (p: string) => ({
-          path: p,
-          name: p.split(/[\\/]/).pop() || p,
-          size: 0,
-          mimeType: '',
-        })),
-      );
+      const infos: FileInfo[] = paths.map((p: string) => ({
+        path: p,
+        name: p.split(/[\\/]/).pop() || p,
+        size: 0,
+        mimeType: '',
+      }));
       setFiles(infos);
-      // 默认输出目录 = 第一个文件所在目录
-      if (!options.outputDir && paths.length > 0) {
+      setError(null);
+      if (!outputDir) {
         const dir = paths[0].replace(/[\\/][^\\/]+$/, '');
-        setOptions((prev) => ({ ...prev, outputDir: dir }));
+        setOutputDir(dir);
       }
     }
   };
 
   const handleSelectOutputDir = async () => {
     const dir = await window.toolbox.selectDirectory();
-    if (dir) {
-      setOptions((prev) => ({ ...prev, outputDir: dir }));
+    if (dir) setOutputDir(dir);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragging');
+    const items = Array.from(e.dataTransfer.files) as any[];
+    if (items.length > 0) {
+      const infos: FileInfo[] = items.map((f: any) => ({
+        path: f.path,
+        name: f.name,
+        size: f.size || 0,
+        mimeType: f.type || '',
+      }));
+      setFiles(infos);
+      setError(null);
+      if (!outputDir && items[0].path) {
+        setOutputDir(items[0].path.replace(/[\\/][^\\/]+$/, ''));
+      }
     }
   };
 
-  // 开始转换
   const handleStart = async () => {
     if (files.length === 0) {
       message.warning('请先选择文件');
       return;
     }
-
     try {
       setRunning(true);
+      setError(null);
       setProgress({ percent: 0, stage: '准备中...' });
-
-      const finalOptions: Record<string, unknown> = {
-        ...options,
-        output_dir: options.outputDir,
-      };
-
       const id = await window.toolbox.startTask({
         pluginId,
         inputs: files,
-        options: finalOptions,
+        options: { ...options, outputDir },
       });
-
       setTaskId(id);
     } catch (err: unknown) {
       setRunning(false);
-      message.error(err instanceof Error ? err.message : '启动失败');
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
+      message.error('启动失败');
     }
   };
 
   if (!plugin) return null;
+
+  const schema = plugin.configSchema;
+  const properties = schema?.properties || {};
 
   return (
     <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
@@ -157,10 +302,14 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
         </Title>
       </Space>
 
-      <Text type="secondary">{plugin.description}</Text>
+      <Paragraph type="secondary">{plugin.description}</Paragraph>
 
       {/* 文件选择 */}
-      <Card title="1. 选择文件" style={{ marginTop: 24 }} bordered={false}>
+      <Card
+        title={<><FileOutlined /> 选择文件</>}
+        style={{ marginTop: 24 }}
+        styles={{ body: { padding: '20px' } }}
+      >
         <div
           className="drop-zone"
           onClick={handleSelectFiles}
@@ -169,157 +318,94 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
             e.currentTarget.classList.add('dragging');
           }}
           onDragLeave={(e) => e.currentTarget.classList.remove('dragging')}
-          onDrop={async (e) => {
-            e.preventDefault();
-            e.currentTarget.classList.remove('dragging');
-            const paths = Array.from(e.dataTransfer.files).map((f: any) => f.path);
-            if (paths.length > 0) {
-              const infos: FileInfo[] = paths.map((p: string) => ({
-                path: p,
-                name: p.split(/[\\/]/).pop() || p,
-                size: 0,
-                mimeType: '',
-              }));
-              setFiles(infos);
-            }
-          }}
+          onDrop={handleDrop}
         >
           {files.length > 0 ? (
             <div>
-              <div style={{ fontSize: 13, color: '#555' }}>
-                已选择 {files.length} 个文件:
+              <div style={{ fontSize: 15, color: '#1a1a1a', marginBottom: 8 }}>
+                已选择 <Text strong>{files.length}</Text> 个文件
               </div>
-              {files.map((f, i) => (
-                <div key={i} style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                  📄 {f.name}
+              {files.slice(0, 5).map((f, i) => (
+                <div key={i} style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
+                  📄 {f.name}{f.size > 0 ? ` (${humanFileSize(f.size)})` : ''}
                 </div>
               ))}
+              {files.length > 5 && (
+                <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                  ...还有 {files.length - 5} 个
+                </div>
+              )}
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: 15, color: '#555' }}>
-                点击选择文件 或 拖拽到此处
+              <div style={{ fontSize: 16, color: '#555' }}>
+                点击选择 或 拖拽文件到此处
               </div>
               <div style={{ fontSize: 12, color: '#999', marginTop: 8 }}>
-                支持格式: {plugin.inputFormats.map((f) => `.${f}`).join(', ')}
+                支持: {plugin.inputFormats.map((f) => `.${f}`).join(' / ')}
               </div>
             </div>
           )}
         </div>
       </Card>
 
-      {/* 配置 */}
-      <Card title="2. 转换设置" style={{ marginTop: 16 }} bordered={false}>
-        <Row gutter={16}>
-          <Col span={12}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Text strong>转换策略</Text>
-              <Select
-                value={options.strategy}
-                onChange={(v) => setOptions((p) => ({ ...p, strategy: v }))}
-                disabled={running}
-                options={[
-                  { value: 'hybrid', label: '🔀 混合 (推荐,可编辑 + 保真)' },
-                  { value: 'structured', label: '📝 纯结构化 (完全可编辑)' },
-                  { value: 'screenshot', label: '📸 截图保真 (视觉一致,不可编辑)' },
-                ]}
-                style={{ width: '100%' }}
-              />
-            </Space>
-          </Col>
-          <Col span={12}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Text strong>PPT 比例</Text>
-              <Select
-                value={options.slideRatio}
-                onChange={(v) => setOptions((p) => ({ ...p, slideRatio: v }))}
-                disabled={running || options.strategy === 'screenshot'}
-                options={[
-                  { value: 'match_pdf', label: '与 PDF 一致' },
-                  { value: '16:9', label: '16:9' },
-                  { value: '4:3', label: '4:3' },
-                ]}
-                style={{ width: '100%' }}
-              />
-            </Space>
-          </Col>
-        </Row>
-
-        {options.strategy !== 'structured' && (
-          <>
-            <Divider style={{ margin: '16px 0' }} />
-            <Row gutter={16}>
-              <Col span={12}>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Text strong>渲染 DPI</Text>
-                  <InputNumber
-                    value={options.dpi}
-                    onChange={(v) => setOptions((p) => ({ ...p, dpi: v || 200 }))}
-                    min={72}
-                    max={600}
-                    step={50}
-                    disabled={running}
-                    style={{ width: '100%' }}
-                    addonAfter="DPI"
-                  />
-                </Space>
-              </Col>
-              <Col span={12}>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Text strong>缺失字体替代</Text>
-                  <Select
-                    value={options.fontFallback}
-                    onChange={(v) => setOptions((p) => ({ ...p, fontFallback: v }))}
-                    disabled={running}
-                    options={[
-                      { value: '微软雅黑' },
-                      { value: '宋体' },
-                      { value: '黑体' },
-                      { value: 'Arial' },
-                    ]}
-                    style={{ width: '100%' }}
-                  />
-                </Space>
-              </Col>
-            </Row>
-          </>
-        )}
-
-        <Divider style={{ margin: '16px 0' }} />
-        <Row gutter={16} align="middle">
-          <Col flex="auto">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Text strong>输出目录</Text>
-              <Space.Compact style={{ width: '100%' }}>
-                <InputNumber
-                  value={undefined}
-                  style={{ display: 'none' }}
-                />
-                <Button
-                  icon={<FolderOpenOutlined />}
-                  onClick={handleSelectOutputDir}
+      {/* 配置（动态） */}
+      {Object.keys(properties).length > 0 && (
+        <Card title="⚙️ 转换设置" style={{ marginTop: 16 }} styles={{ body: { padding: '20px' } }}>
+          <Row gutter={[16, 16]}>
+            {Object.entries(properties).map(([key, s]) => (
+              <Col span={s.type === 'boolean' ? 8 : 12} key={key}>
+                <SchemaField
+                  name={key}
+                  schema={s}
+                  value={options[key]}
+                  onChange={(v: any) => updateOption(key, v)}
                   disabled={running}
-                >
-                  {options.outputDir || '默认 (源文件所在目录)'}
-                </Button>
-              </Space.Compact>
-            </Space>
-          </Col>
-          <Col>
-            <Space direction="vertical">
-              <Text strong>自动打开</Text>
-              <Switch
-                checked={options.autoOpen}
-                onChange={(v) => setOptions((p) => ({ ...p, autoOpen: v }))}
-                disabled={running}
-              />
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+                />
+              </Col>
+            ))}
+          </Row>
+
+          <Divider style={{ margin: '16px 0' }} />
+
+          <Row gutter={16} align="middle">
+            <Col flex="auto">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Text strong>输出目录</Text>
+                <Space.Compact style={{ width: '100%' }}>
+                  <Button
+                    icon={<FolderOpenOutlined />}
+                    onClick={handleSelectOutputDir}
+                    disabled={running}
+                    style={{ width: '100%', textAlign: 'left' }}
+                  >
+                    {outputDir || '默认 (源文件所在目录)'}
+                  </Button>
+                </Space.Compact>
+              </Space>
+            </Col>
+            <Col>
+              <Space direction="vertical">
+                <Text strong>完成后自动打开</Text>
+                <Switch
+                  checked={autoOpen}
+                  onChange={setAutoOpen}
+                  checkedChildren="开"
+                  unCheckedChildren="关"
+                  disabled={running}
+                />
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+      )}
 
       {/* 执行 */}
-      <Card title="3. 执行" style={{ marginTop: 16 }} bordered={false}>
+      <Card
+        title="▶️ 执行转换"
+        style={{ marginTop: 16 }}
+        styles={{ body: { padding: '20px' } }}
+      >
         <Button
           type="primary"
           size="large"
@@ -332,19 +418,34 @@ export default function ConvertPage({ pluginId, onBack }: ConvertPageProps) {
           {running ? '转换中...' : '开始转换'}
         </Button>
 
+        {error && (
+          <div style={{ marginTop: 16, padding: 12, background: '#fff2f0', borderRadius: 6, border: '1px solid #ffccc7' }}>
+            <Text type="danger" style={{ fontSize: 12 }}>
+              ❌ {error}
+            </Text>
+          </div>
+        )}
+
         {progress && (
           <div style={{ marginTop: 20 }}>
             <Row justify="space-between" style={{ marginBottom: 6 }}>
-              <Text>{progress.stage}</Text>
+              <Space>
+                {running && <span className="ant-spin-dot" style={{ display: 'inline-block' }} />}
+                <Text>{progress.stage}</Text>
+              </Space>
               <Text type="secondary">{progress.percent}%</Text>
             </Row>
             <Progress
               percent={progress.percent}
               status={running ? 'active' : progress.percent === 100 ? 'success' : 'exception'}
-              strokeColor={{ from: '#1677ff', to: '#69b1ff' }}
+              strokeColor={
+                progress.percent === 100
+                  ? { from: '#1677ff', to: '#52c41a' }
+                  : { from: '#1677ff', to: '#69b1ff' }
+              }
             />
             {progress.detail && (
-              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
+              <Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
                 {progress.detail}
               </Text>
             )}

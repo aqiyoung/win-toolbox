@@ -1,0 +1,30 @@
+{
+  "id": "video-format",
+  "name": "视频格式转换",
+  "description": "将视频转为 MP4 / MKV / AVI / WebM / MOV / GIF",
+  "version": "0.1.0",
+  "category": "video",
+  "inputFormats": ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "ts", "m4v"],
+  "outputFormats": ["mp4", "mkv", "avi", "webm", "mov", "gif"],
+  "author": "Win Toolbox",
+  "icon": "🎬",
+  "requiresPython": false,
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "format": {
+        "type": "string",
+        "enum": ["mp4", "mkv", "avi", "webm", "mov", "gif"],
+        "default": "mp4"
+      },
+      "videoBitrate": {
+        "type": "string",
+        "default": "2000k"
+      },
+      "audioBitrate": {
+        "type": "string",
+        "default": "128k"
+      }
+    }
+  }
+}

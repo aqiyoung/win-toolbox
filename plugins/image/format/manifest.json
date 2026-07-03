@@ -1,0 +1,28 @@
+{
+  "id": "img-format",
+  "name": "图片格式转换",
+  "description": "批量转换图片格式：PNG / JPG / WebP / AVIF / TIFF",
+  "version": "0.1.0",
+  "category": "image",
+  "inputFormats": ["png", "jpg", "jpeg", "bmp", "webp", "tiff", "gif"],
+  "outputFormats": ["png", "jpg", "webp", "avif", "tiff"],
+  "author": "Win Toolbox",
+  "icon": "🔄",
+  "requiresPython": false,
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "format": {
+        "type": "string",
+        "enum": ["png", "jpg", "webp", "avif", "tiff"],
+        "default": "png"
+      },
+      "quality": {
+        "type": "number",
+        "default": 85,
+        "minimum": 1,
+        "maximum": 100
+      }
+    }
+  }
+}

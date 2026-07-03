@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Space, Typography } from 'antd';
 import { MinusOutlined, BorderOutlined, CloseOutlined } from '@ant-design/icons';
+import logoUrl from '../../build/logo-256.png';
 
 const { Text } = Typography;
 
@@ -35,8 +36,8 @@ export default function TitleBar() {
       }}
     >
       <Space>
-        <span style={{ fontSize: 16, fontWeight: 600, color: '#1677ff' }}>🔧</span>
-        <Text strong>Win Toolbox</Text>
+        <img src={logoUrl} alt="" width={22} height={22} style={{ verticalAlign: 'middle' }} />
+        <Text strong style={{ marginLeft: 4 }}>Win Toolbox</Text>
         {version && (
           <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
             v{version}
