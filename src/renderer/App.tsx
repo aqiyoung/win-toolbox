@@ -8,7 +8,6 @@ import {
   HomeOutlined,
   HistoryOutlined,
   SettingOutlined,
-  QuestionCircleOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
 import TitleBar from './components/TitleBar';
@@ -16,19 +15,12 @@ import HomePage from './pages/Home';
 import ConvertPage from './pages/Convert';
 import TasksPage from './pages/Tasks';
 import SettingsPage from './pages/Settings';
-import logoUrl from '../build/logo-256.png';
+const logoUrl = new URL('../build/logo-256.png', import.meta.url).href;
 
 const { Sider, Content } = Layout;
 const { Text } = Typography;
 
 type Page = 'home' | 'convert' | 'tasks' | 'settings';
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  document: '📄',
-  video: '🎬',
-  image: '🖼️',
-  audio: '🎵',
-};
 
 export default function App() {
   const [page, setPage] = useState<Page>('home');
