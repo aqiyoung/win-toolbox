@@ -10,6 +10,9 @@ files:
   - "package.json"
 
 extraResources:
+  - from: "plugins"
+    to: "plugins"
+    filter: ["**/*"]
   - from: "python-runtime"
     to: "python-runtime"
     filter: ["**/*"]

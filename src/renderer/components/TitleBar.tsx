@@ -1,72 +1,44 @@
 /**
- * 自定义标题栏 (无边框窗口)
+ * 标题栏 — 拖拽区 + 窗口控制按钮（无边框窗口用）
  */
 
-import { useEffect, useState } from 'react';
-import { Button, Space, Typography } from 'antd';
+import { Button } from 'antd';
 import { MinusOutlined, BorderOutlined, CloseOutlined } from '@ant-design/icons';
-const logoUrl = new URL('../../../build/logo-256.png', import.meta.url).href;
-
-const { Text } = Typography;
-
-declare global {
-  interface Window {
-    toolbox: {
-      getAppVersion: () => Promise<string>;
-    };
-  }
-}
 
 export default function TitleBar() {
-  const [version, setVersion] = useState('');
-
-  useEffect(() => {
-    window.toolbox.getAppVersion().then(setVersion).catch(() => {});
-  }, []);
-
   return (
     <div
       className="titlebar"
       style={{
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         alignItems: 'center',
         width: '100%',
-        height: '100%',
+        height: 36,
+        padding: '0 4px',
       }}
     >
-      <Space>
-        <img src={logoUrl} alt="" width={22} height={22} style={{ verticalAlign: 'middle' }} />
-        <Text strong style={{ marginLeft: 4 }}>Win Toolbox</Text>
-        {version && (
-          <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
-            v{version}
-          </Text>
-        )}
-      </Space>
-
-      <div className="no-drag" style={{ display: 'flex', gap: 4 }}>
+      <div className="no-drag" style={{ display: 'flex', gap: 2 }}>
         <Button
           type="text"
           size="small"
           icon={<MinusOutlined />}
           onClick={() => (window as any).electron?.minimize?.()}
-          style={{ width: 32, height: 32 }}
+          style={{ width: 36, height: 32, color: '#666' }}
         />
         <Button
           type="text"
           size="small"
-          icon={<BorderOutlined />}
+          icon={<BorderOutlined style={{ fontSize: 10 }} />}
           onClick={() => (window as any).electron?.maximize?.()}
-          style={{ width: 32, height: 32 }}
+          style={{ width: 36, height: 32, color: '#666' }}
         />
         <Button
           type="text"
           size="small"
           icon={<CloseOutlined />}
           onClick={() => window.close()}
-          style={{ width: 32, height: 32 }}
-          danger
+          style={{ width: 36, height: 32, color: '#666' }}
         />
       </div>
     </div>

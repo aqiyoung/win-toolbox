@@ -28,8 +28,8 @@ export class PluginManager {
             await fs.access(manifestPath);
             const plugin = await loadPlugin(manifestPath);
             this.register(plugin);
-          } catch {
-            // 静默跳过无 manifest 的目录
+          } catch (err) {
+            console.error(`[PluginManager] 加载失败: ${manifestPath}`, err);
           }
         }
       }

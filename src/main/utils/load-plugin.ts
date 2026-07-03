@@ -44,7 +44,9 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
   try {
     nodePlugin = require(indexPath);
   } catch {
-    // 没有 index.js 则不是 Node 插件
+    // 没有 index.js 或加载失败 — 仍返回 manifest 基本信息
+    // Python-only 插件可以没有可用的 nodePlugin,但仍需出现在列表中
+    console.warn(`[loadPlugin] ${manifest.id}: index.js 不可用 (${indexPath}), Python-only 模式`);
   }
 
   return {

@@ -46,8 +46,13 @@ export const PYTHON_DIR = IS_DEV
 /** Python 可执行文件路径 */
 export const PYTHON_PATH = join(PYTHON_DIR, 'python.exe');
 
-/** 插件目录 */
-export const PLUGINS_DIR = join(process.cwd(), 'plugins');
+/** 插件目录
+ * 开发模式: <project>/plugins/
+ * 打包模式: <resources>/plugins/ (extraResources 解压位置)
+ */
+export const PLUGINS_DIR = IS_DEV
+  ? join(process.cwd(), 'plugins')
+  : join(process.resourcesPath, 'plugins');
 
 // ─── 任务队列 ────────────────────────────────
 
