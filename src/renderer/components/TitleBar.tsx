@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Space, Typography } from 'antd';
 import { MinusOutlined, BorderOutlined, CloseOutlined } from '@ant-design/icons';
-import logoUrl from '../../build/logo-256.png';
+const logoUrl = new URL('../../../build/logo-256.png', import.meta.url).href;
 
 const { Text } = Typography;
 
