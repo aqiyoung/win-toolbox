@@ -1,22 +1,18 @@
 /**
- * Image Resize — Node.js plugin using Sharp
- *
- * Usage: window.toolbox.startTask({ pluginId: 'img-resize', inputs, options })
- *
- * Sharp must be installed as a production dep in package.json
+ * Image Resize — pure JS (Jimp) — no native deps, works inside asar
  */
 
-const sharp = require('sharp');
+const Jimp = require('jimp');
 const path = require('path');
 const fs = require('fs');
 
-const VALID_INPUT = ['png', 'jpg', 'jpeg', 'bmp', 'webp', 'tiff'];
+const VALID = ['png', 'jpg', 'jpeg', 'bmp', 'webp', 'tiff'];
 
 async function validate(inputs) {
   const errors = [];
   for (const f of inputs) {
     const ext = path.extname(f.name).slice(1).toLowerCase();
-    if (!VALID_INPUT.includes(ext)) errors.push(`不支持: ${f.name}`);
+    if (!VALID.includes(ext)) errors.push(`不支持: ${f.name}`);
   }
   return { valid: errors.length === 0, errors };
 }
@@ -37,43 +33,38 @@ async function convert(inputs, options, onProgress) {
     const outName = `${path.parse(inp.name).name}_resized.${ext}`;
     const outputPath = path.join(outputDir, outName);
 
-    let pipeline = sharp(inp.path);
+    const img = await Jimp.read(inp.path);
+    const origW = img.getWidth();
+    const origH = img.getHeight();
 
+    let newW = origW, newH = origH;
     if (mode === 'percent') {
       const pct = (options.percent || 50) / 100;
-      const meta = await sharp(inp.path).metadata();
-      pipeline = pipeline.resize({
-        width: Math.round(meta.width * pct),
-        height: Math.round(meta.height * pct),
-      });
+      newW = Math.round(origW * pct);
+      newH = Math.round(origH * pct);
     } else if (mode === 'width') {
-      pipeline = pipeline.resize({ width: options.width });
+      newW = options.width;
+      newH = Math.round(origH * (options.width / origW));
     } else if (mode === 'height') {
-      pipeline = pipeline.resize({ height: options.height });
+      newH = options.height;
+      newW = Math.round(origW * (options.height / origH));
     } else if (mode === 'fit') {
-      pipeline = pipeline.resize({
-        width: options.width,
-        height: options.height,
-        fit: 'inside',
-      });
+      // scale to fit within box
+      const ratio = Math.min(options.width / origW, options.height / origH);
+      newW = Math.round(origW * ratio);
+      newH = Math.round(origH * ratio);
     }
 
-    switch (ext) {
-      case 'jpg':
-      case 'jpeg':
-        pipeline = pipeline.jpeg({ quality });
-        break;
-      case 'png':
-        pipeline = pipeline.png({ compressionLevel: Math.round((100 - quality) / 11) });
-        break;
-      case 'webp':
-        pipeline = pipeline.webp({ quality });
-        break;
+    await img.resize(newW, newH);
+
+    // Jimp quality: 0-100 for JPEG
+    if (ext === 'jpg' || ext === 'jpeg') {
+      img.quality(quality);
     }
 
-    await pipeline.toFile(outputPath);
+    await img.writeAsync(outputPath);
+
     outputFiles.push(outputPath);
-
     onProgress({
       percent: Math.round(((i + 1) / total) * 100),
       stage: `缩放 ${i + 1}/${total}`,
@@ -82,11 +73,7 @@ async function convert(inputs, options, onProgress) {
     });
   }
 
-  return {
-    outputFiles,
-    warnings: [],
-    stats: { converted: total },
-  };
+  return { outputFiles, warnings: [], stats: { converted: total } };
 }
 
 module.exports = { validate, convert, createManifest: () => require('./manifest.json') };

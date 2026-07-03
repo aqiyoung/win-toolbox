@@ -1,20 +1,12 @@
 /**
- * Image Format Convert — Sharp-based format converter
+ * Image Format Convert — pure JS (Jimp) — no native deps
  */
 
-const sharp = require('sharp');
+const Jimp = require('jimp');
 const path = require('path');
 const fs = require('fs');
 
 const VALID = ['png', 'jpg', 'jpeg', 'bmp', 'webp', 'tiff', 'gif'];
-const FORMAT_OPTS = {
-  png:  () => ({}),
-  jpg:  (q) => ({ jpeg: { quality: q } }),
-  jpeg: (q) => ({ jpeg: { quality: q } }),
-  webp: (q) => ({ webp: { quality: q } }),
-  avif: (q) => ({ avif: { quality: q } }),
-  tiff: () => ({}),
-};
 
 async function validate(inputs) {
   const errors = [];
@@ -33,16 +25,16 @@ async function convert(inputs, options, onProgress) {
   fs.mkdirSync(outputDir, { recursive: true });
   const outputFiles = [];
   const total = inputs.length;
-  const formatKey = FORMAT_OPTS[format] ? format : 'png';
 
   for (let i = 0; i < total; i++) {
     const inp = inputs[i];
     const outName = `${path.parse(inp.name).name}.${format}`;
     const outputPath = path.join(outputDir, outName);
 
-    await sharp(inp.path)
-      [formatKey](FORMAT_OPTS[formatKey](quality))
-      .toFile(outputPath);
+    const img = await Jimp.read(inp.path);
+    if (format === 'jpg' || format === 'jpeg') img.quality(quality);
+
+    await img.writeAsync(outputPath);
 
     outputFiles.push(outputPath);
     onProgress({
