@@ -8,6 +8,7 @@ directories:
 files:
   - "out/**/*"
   - "package.json"
+  - "!node_modules/sharp/**/*"   # sharp not used (replaced by jimp)
 
 extraResources:
   - from: "plugins"
@@ -19,6 +20,14 @@ extraResources:
   - from: "resources/ffmpeg"
     to: "resources/ffmpeg"
     filter: ["**/*"]
+
+# jimp 解包到 asar 外（pure JS 但用了大量小文件，需要 fs 读取）
+asarUnpack:
+  - "node_modules/jimp/**/*"
+  - "node_modules/@jimp/**/*"
+  - "node_modules/pngjs/**/*"
+  - "node_modules/omggif/**/*"
+  - "node_modules/@babel/runtime/**/*"
 
 nsis:
   oneClick: false

@@ -30,17 +30,21 @@ export async function loadPlugin(manifestPath: string): Promise<Plugin> {
   const baseDir = dirname(manifestPath);
   const indexPath = join(baseDir, 'index.js');
 
-  // ★ 惰性加载：discover 阶段不 require index.js —— 只检查文件是否存在于 manifest。
-  // require 延迟到实际 convert 时执行，这样带 native 模块 (sharp/fluent-ffmpeg) 的插件
-   // 不会在 require() 时就崩溃整个 discover 过程。
+  // ★ 惰性加载：discover 阶段不 require index.js —— 这样某个插件的加载失败
+  // 不会波及其他插件。require 延迟到实际 convert 时执行。
+  // 同时把 plugin 目录加入 module.paths，让相对 require('jimp') 能找到根 node_modules。
   let cachedNodePlugin: any = null;
 
   function getNodePlugin() {
     if (cachedNodePlugin !== null) return cachedNodePlugin;
     try {
+      // 让 require() 从项目根目录的 node_modules 也能解析
+      const Module = require('module');
+      const rootPaths = Module._nodeModulePaths(process.cwd());
+      Module.globalPaths = [...new Set([...Module.globalPaths, ...rootPaths, process.cwd()])];
       cachedNodePlugin = require(indexPath);
     } catch (err) {
-      cachedNodePlugin = false; // 标记失败,避免重复 require
+      cachedNodePlugin = false;
       console.warn(`[loadPlugin] ${manifest.id}: require 失败 (${indexPath}):`, err);
     }
     return cachedNodePlugin || null;
